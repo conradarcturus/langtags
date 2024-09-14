@@ -24,8 +24,17 @@ jobs:
               owner: "silnrsi",
               repo: "sldr"
             })
-          const artifact = result.data.artifacts[0]
-          console.log(artifact)
+          core.debug(context)
+          const artifact = context.event_name == "push_event" 
+            ? result.data.artifacts.find((artifact, index, artifacts) {
+                return context.ref == artifact.workflow_run.head_branch
+              })
+            : result.data.artifacts[0]
+
+          if (!artifact) {
+            core.setFailed(`No recent SDLR artifacts found on silnrsi/sldr branch: ${context.ref}`)
+          }
+          core.debug(artifact)
           return artifact
 
     - uses: actions/cache@v4
