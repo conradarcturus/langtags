@@ -26,7 +26,7 @@ jobs:
             })
           core.debug(context)
           const artifact = context.event_name == "push_event" 
-            ? result.data.artifacts.find((artifact, index, artifacts) {
+            ? result.data.artifacts.find(function (artifact, index, artifacts) {
                 return context.ref == artifact.workflow_run.head_branch
               })
             : result.data.artifacts[0]
