@@ -1,7 +1,7 @@
 name: Deploy langtags.json for staging
 on:
   push:
-    branches: [master]
+    branches: [master, feat/*]
     paths:
       - .github/workflows/**
       - bin/ltdb2alltags
