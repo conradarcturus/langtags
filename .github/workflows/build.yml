@@ -19,15 +19,16 @@ jobs:
       id: find-sldr
       with:
         script: |
+          const sldr_branch = context.ref == "release" ? "release" : "master"
           const result = await github.rest.actions
             .listArtifactsForRepo({
               owner: "silnrsi",
               repo: "sldr"
             })
           core.debug(context)
-          const artifact = context.event_name == "push_event" 
+          const artifact = context.eventName == "push" 
             ? result.data.artifacts.find(function (artifact, index, artifacts) {
-                return context.ref == artifact.workflow_run.head_branch
+                return artifact.workflow_run.head_branch == sldr_branch
               })
             : result.data.artifacts[0]
 
