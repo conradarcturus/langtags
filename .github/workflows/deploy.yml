@@ -46,6 +46,6 @@ jobs:
         event-type: langtags-deployed
         client-payload: >- 
           {
-            "release": "${{ github.ref_name == 'release' }}"
-            "artifact-id": ${{ inputs.artifact-id }}
+            "release": "${{ github.ref_name == 'release' }}",
+            "artifact-id": "${{ inputs.artifact-id }}"
           }
