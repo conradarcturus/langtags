@@ -13,12 +13,12 @@ on:
     outputs:
       artifact-id:
         description: "The artifact uploaded by this build"
-        value: ${{ jobs.build.outputs.artifact.id }}    
+        value: ${{ jobs.build.outputs.artifact-id}}    
 jobs:
   build:
     runs-on: ubuntu-latest
     outputs:
-      artifact: ${{ steps.upload.outputs }}
+      artifact-id: ${{ steps.upload.outputs.id }}
     steps:
     - uses: actions/checkout@v4
     - uses: actions/setup-python@v5
