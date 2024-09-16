@@ -1,9 +1,24 @@
 name: Build
 on:
   workflow_call:
+    inputs:
+      sldr-artifact-id:
+        type: string
+        required: false
+        default: null
+      sldr-release:
+        type: boolean
+        required: false
+        default: false
+    outputs:
+      artifact-id:
+        description: "The artifact uploaded by this build"
+        value: ${{ jobs.build.outputs.artifact.id }}    
 jobs:
   build:
     runs-on: ubuntu-latest
+    outputs:
+      artifact: ${{ steps.upload.outputs }}
     steps:
     - uses: actions/checkout@v4
     - uses: actions/setup-python@v5
@@ -19,24 +34,29 @@ jobs:
       id: find-sldr
       with:
         script: |
-          const sldr_branch = context.ref == "release" ? "release" : "master"
-          const result = await github.rest.actions
-            .listArtifactsForRepo({
-              owner: "silnrsi",
-              repo: "sldr"
-            })
-          core.debug(context)
-          const artifact = context.eventName == "push" 
-            ? result.data.artifacts.find(function (artifact, index, artifacts) {
-                return artifact.workflow_run.head_branch == sldr_branch
-              })
-            : result.data.artifacts[0]
-
-          if (!artifact) {
-            core.setFailed(`No recent SDLR artifacts found on silnrsi/sldr branch: ${context.ref}`)
+          const sldr_branch = context.ref_name == 'release' ? 'release' : 'master'
+          const sldr_artifact_id = core.getInput("sldr-artifact-input")
+          if (sldr_artifact_id)
+          {
+            core.setOutput("artifact-id", sldr_artifact_id)
           }
-          core.debug(artifact)
-          return artifact
+          else
+          {
+            const result = await github.rest.actions
+              .listArtifactsForRepo({
+                owner: "silnrsi",
+                repo: "sldr"
+              })
+            core.debug(context)
+            const artifact = result.data.artifacts.find(function (artifact, index, artifacts) {
+                  return artifact.workflow_run.head_branch == sldr_branch
+                })
+            if (!artifact) {
+              core.setFailed(`No recent SDLR artifacts found on silnrsi/sldr branch: ${context.ref}`)
+            }
+            core.debug(artifact)
+            core.setOutput("artifact-id", artifact.id)
+          }
 
     - uses: actions/cache@v4
       id: cached-sldr
@@ -44,13 +64,13 @@ jobs:
         path: |
           unflat
           flat
-        key: sldr-${{fromJSON(steps.find-sldr.outputs.result).id}}
+        key: sldr-${{ steps.find-sldr.outputs.artifact-id }}
 
     - name: Download the SLDR dependency
       if: steps.cached-sldr.outputs.cache-hit != 'true'
       uses: actions/github-script@v7
       env:
-        artifact_id: ${{fromJSON(steps.find-sldr.outputs.result).id}}
+        artifact_id: ${{ steps.find-sldr.outputs.artifact-id }}
       with:
         script: |
           const fs = require('fs')
@@ -74,6 +94,7 @@ jobs:
       run: |
         make SLDR=unflat FLATDIR=flat build
     - uses: actions/upload-artifact@v4
+      id: upload
       with:
         name: langtags
         path: |
@@ -101,12 +122,3 @@ jobs:
       id: langtags
       run: |
         python3 -m unittest tests.test_json tests.python.test_python tests.test_basic
-        echo "need_commit=$(git diff -wU0 pub/langtags.json | grep '^+ ' | grep -v '\"date\":' | wc -l)" >> $GITHUB_OUTPUT
-#    - name: Commit built langtags
-#      if: steps.langtags.output.need_commit != 0
-#      uses: EndBug/add-and-commit@v5
-#      with:
-#        message: "GitHub Actions updated pub"
-#        add: "pub/*"
-#      env:
-#        GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}

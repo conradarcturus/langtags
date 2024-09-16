@@ -16,11 +16,15 @@ on:
 jobs:
   build:
     uses: ./.github/workflows/build.yml
+    with:
+      sldr-artifact-id: ${{ github.event.client_payload.artifact-id }}
+      sldr-release: ${{ github.event.client_payload.release }}
 
   deploy:
     needs: build
     uses: ./.github/workflows/deploy.yml
     with:
+      artifact-id: ${{ needs.build.outputs.artifact-id }}
       path: .
     secrets:
       uploader_key: ${{ secrets.UPLOADER_SSH_KEY }}

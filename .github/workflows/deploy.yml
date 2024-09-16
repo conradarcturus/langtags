@@ -2,6 +2,9 @@ name: Deploy to server
 on:
   workflow_call:
     inputs:
+      artifact-id:
+        required: true
+        type: number
       path:
         required: true
         type: string
@@ -39,9 +42,10 @@ jobs:
       uses: peter-evans/repository-dispatch@v3
       with:
         token: ${{ secrets.repository_dispatch_pat }}
-        repository: silnrsi/findafont
+        repository: silnrsi/langfontfinder
         event-type: langtags-deployed
         client-payload: >- 
           {
-            "release": "${{ endsWith(github.ref, '/release') }}"
+            "release": "${{ github.ref_name == 'release' }}"
+            "artifact-id": ${{ inputs.artifact-id }}
           }

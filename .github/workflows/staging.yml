@@ -1,18 +1,7 @@
-name: Deploy langtags.json for staging
+name: Build and deploy langtags.json for staging
 on:
   push:
-    branches: [master, feat/*]
-    paths:
-      - .github/workflows/**
-      - bin/ltdb2alltags
-      - bin/jsonlangtagstotxt
-      - lib/**
-      - source/**
-      - tests/**
-      - Makefile
-      - setup.py
-  pull_request:
-    branches: [master]
+    branches: [master, feat/*, fix/*]
     paths:
       - .github/workflows/**
       - bin/ltdb2alltags
@@ -27,11 +16,15 @@ on:
 jobs:
   build:
     uses: ./.github/workflows/build.yml
+    with:
+      sldr-artifact-id: ${{ github.event.client_payload.artifact-id }}
+      sldr-release: ${{ github.event.client_payload.release }}
 
   deploy:
     needs: build
     uses: ./.github/workflows/deploy.yml
     with:
+      artifact-id: ${{ needs.build.outputs.artifact-id }}
       path: staging
     secrets:
       uploader_key: ${{ secrets.UPLOADER_SSH_KEY }}
