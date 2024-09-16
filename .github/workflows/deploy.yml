@@ -4,7 +4,7 @@ on:
     inputs:
       artifact-id:
         required: true
-        type: number
+        type: string
       path:
         required: true
         type: string
