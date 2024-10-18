@@ -42,6 +42,7 @@ jobs:
         key: sldr-${{ env.run-id }}
 
     - uses: actions/download-artifact@v4
+      if: steps.cached-sldr.outputs.cache-hit != true
       with:
         name: sldr
         github-token: ${{ secrets.GITHUB_TOKEN }}
