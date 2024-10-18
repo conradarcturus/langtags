@@ -50,7 +50,8 @@ jobs:
     - uses: actions/download-artifact@v4
       with:
         name: sldr
-        repository: silnrsi/sldr
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        repository: ${{ github.repository_owner }}/sldr
         run-id: ${{ env.run-id }}
 
     # - name: Download the SLDR dependency
