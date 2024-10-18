@@ -31,7 +31,7 @@ jobs:
         script: |
           const result = await github.rest.actions
             .listWorkflowRunsForRepo({
-              owner: "${{ github.repository_owner_id }}",
+              owner: "${{ github.repository_owner }}",
               repo: "sldr",
               branch: "${{ env.sldr-branch }}",
               exclude_pull_requests: true
