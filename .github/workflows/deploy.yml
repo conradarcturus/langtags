@@ -2,9 +2,6 @@ name: Deploy to server
 on:
   workflow_call:
     inputs:
-      artifact-id:
-        required: true
-        type: string
       path:
         required: true
         type: string
@@ -40,5 +37,5 @@ jobs:
         client-payload: >- 
           {
             "release": "${{ github.ref_name == 'release' }}",
-            "artifact-id": "${{ inputs.artifact-id }}"
+            "run_id": "${{ github.run_id }}"
           }
