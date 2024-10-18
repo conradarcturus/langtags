@@ -6,17 +6,11 @@ on:
         type: string
         required: false
         default: null
-      sldr-release:
-        type: boolean
-        required: false
-        default: false
-env:
-  sldr-branch: ${{ (github.event.branch || github.ref_name) == 'release' && 'release' || 'master' }}
 jobs:
   build:
     runs-on: ubuntu-latest
     env:
-      run-id: ${{ inputs.sldr-run-id }}
+      run-id: ${{ github.event.client_payload.run_id }}
     steps:
     - uses: actions/checkout@v4
     - uses: actions/setup-python@v5
@@ -28,7 +22,9 @@ jobs:
           six
 
     - name: Find latest SLDR dependency
-      if: ${{ inputs.sldr-run-id == null }}
+      if: ${{ env.run-id == null }}
+      env:
+        sldr-branch: ${{ (github.event.branch || github.ref_name) == 'release' && 'release' || 'master' }}
       uses: actions/github-script@v7
       id: find-sldr
       with:
@@ -37,7 +33,7 @@ jobs:
             .listWorkflowRunsForRepo({
               owner: "${{ github.repository_owner_id }}",
               repo: "sldr",
-              branch: "${{ github.ref_name }}",
+              branch: "${{ env.sldr-branch }}",
               exclude_pull_requests: true
             })
           core.debug(context)

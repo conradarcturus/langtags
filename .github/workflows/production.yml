@@ -18,7 +18,6 @@ jobs:
     uses: ./.github/workflows/build.yml
     with:
       sldr-run-id: ${{ github.event.client_payload.run_id }}
-      sldr-release: ${{ github.event.client_payload.release == 'true' }}
 
   # deploy:
   #   needs: build
