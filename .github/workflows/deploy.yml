@@ -8,13 +8,6 @@ on:
       path:
         required: true
         type: string
-    secrets:
-      uploader_key:
-        required: true
-      server_address:
-        required: true
-      repository_dispatch_pat:
-        required: true
 
 jobs:
   deploy:
@@ -25,14 +18,14 @@ jobs:
     # Install our private key for uploading deliverable
     - uses: webfactory/ssh-agent@v0.9.0
       with:
-        ssh-private-key: ${{ secrets.uploader_key }}
+        ssh-private-key: ${{ secrets.UPLOADER_SSH_KEY }}
     # Download the artefact
     - uses: actions/download-artifact@v4
       with:
         name: langtags
     # Upload results
     - name: Upload langtags to /sites/s/data/${{ inputs.path }}
-      run: rsync ${{env.RSYNC_OPTS}} langtags.{json,txt} ${{ secrets.server_address }}/sites/s/data/${{ inputs.path }}/
+      run: rsync ${{ env.RSYNC_OPTS }} langtags.{json,txt} ${{ secrets.UPLOAD_TARGET }}/sites/s/data/${{ inputs.path }}/
 
   dispatch:
     runs-on: ubuntu-latest
@@ -41,7 +34,7 @@ jobs:
     - name: Trigger findafont rebuild
       uses: peter-evans/repository-dispatch@v3
       with:
-        token: ${{ secrets.repository_dispatch_pat }}
+        token: ${{ secrets.REPO_DISPATCH_TOKEN }}
         repository: silnrsi/langfontfinder
         event-type: langtags-deployed
         client-payload: >- 
