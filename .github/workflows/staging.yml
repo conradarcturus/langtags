@@ -17,13 +17,12 @@ jobs:
   build:
     uses: ./.github/workflows/build.yml
     with:
-      sldr-artifact-id: ${{ github.event.client_payload.artifact-id }}
+      sldr-run-id: ${{ github.event.client_payload.run_id }}
       sldr-release: ${{ github.event.client_payload.release == 'true' }}
 
-  deploy:
-    needs: build
-    uses: ./.github/workflows/deploy.yml
-    secrets: inherit
-    with:
-      artifact-id: ${{ needs.build.outputs.artifact-id }}
-      path: staging
+  # deploy:
+  #   needs: build
+  #   uses: ./.github/workflows/deploy.yml
+  #   secrets: inherit
+  #   with:
+  #     path: staging

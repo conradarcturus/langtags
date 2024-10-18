@@ -2,7 +2,7 @@ name: Build
 on:
   workflow_call:
     inputs:
-      sldr-artifact-id:
+      sldr-run-id:
         type: string
         required: false
         default: null
@@ -10,15 +10,13 @@ on:
         type: boolean
         required: false
         default: false
-    outputs:
-      artifact-id:
-        description: "The artifact uploaded by this build"
-        value: ${{ jobs.build.outputs.artifact-id}}    
+env:
+  sldr-branch: ${{ (github.event.branch || github.ref_name) == 'release' && 'release' || 'master' }}
 jobs:
   build:
     runs-on: ubuntu-latest
-    outputs:
-      artifact-id: ${{ steps.upload.outputs.artifact-id }}
+    env:
+      run-id: ${{ inputs.sldr-run-id }}
     steps:
     - uses: actions/checkout@v4
     - uses: actions/setup-python@v5
@@ -30,33 +28,20 @@ jobs:
           six
 
     - name: Find latest SLDR dependency
+      if: ${{ inputs.sldr-run-id == null }}
       uses: actions/github-script@v7
       id: find-sldr
       with:
         script: |
-          const sldr_branch = context.ref_name == 'release' ? 'release' : 'master'
-          const sldr_artifact_id = core.getInput("sldr-artifact-input")
-          if (sldr_artifact_id)
-          {
-            core.setOutput("artifact-id", sldr_artifact_id)
-          }
-          else
-          {
-            const result = await github.rest.actions
-              .listArtifactsForRepo({
-                owner: "silnrsi",
-                repo: "sldr"
-              })
-            core.debug(context)
-            const artifact = result.data.artifacts.find(function (artifact, index, artifacts) {
-                  return artifact.workflow_run.head_branch == sldr_branch
-                })
-            if (!artifact) {
-              core.setFailed(`No recent SDLR artifacts found on silnrsi/sldr branch: ${context.ref}`)
-            }
-            core.debug(artifact)
-            core.setOutput("artifact-id", artifact.id)
-          }
+          const result = await github.rest.actions
+            .listWorkflowRunsForRepo({
+              owner: "${{ github.repository_owner_id }}",
+              repo: "sldr",
+              branch: "${{ github.ref_name }}",
+              exclude_pull_requests: true
+            })
+          core.debug(context)
+          core.exportVariable("run-id", result.data.workflow_runs[0].id)
 
     - uses: actions/cache@v4
       id: cached-sldr
@@ -64,30 +49,36 @@ jobs:
         path: |
           unflat
           flat
-        key: sldr-${{ steps.find-sldr.outputs.artifact-id }}
+        key: sldr-${{ env.run-id }}
 
-    - name: Download the SLDR dependency
-      if: steps.cached-sldr.outputs.cache-hit != 'true'
-      uses: actions/github-script@v7
-      env:
-        artifact_id: ${{ steps.find-sldr.outputs.artifact-id }}
+    - uses: actions/download-artifact@v4
       with:
-        script: |
-          const fs = require('fs')
-          const response = await github.rest.actions
-            .downloadArtifact({
-              owner: "silnrsi",
-              repo: "sldr",
-              artifact_id: process.env.artifact_id,
-              archive_format: "zip"
-            })
-          fs.writeFileSync('sldr.zip', Buffer.from(response.data))
+        name: sldr
+        repository: sldr
+        run-id: ${{ env.run-id }}
 
-    - name: Extract SLDR dependency
-      if: steps.cached-sldr.outputs.cache-hit != 'true'
-      run: |
-        unzip -q sldr.zip
-        rm sldr.zip
+    # - name: Download the SLDR dependency
+    #   if: steps.cached-sldr.outputs.cache-hit != 'true'
+    #   uses: actions/github-script@v7
+    #   env:
+    #     artifact_id: ${{ steps.find-sldr.outputs.artifact-id }}
+    #   with:
+    #     script: |
+    #       const fs = require('fs')
+    #       const response = await github.rest.actions
+    #         .downloadArtifact({
+    #           owner: "silnrsi",
+    #           repo: "sldr",
+    #           artifact_id: process.env.artifact_id,
+    #           archive_format: "zip"
+    #         })
+    #       fs.writeFileSync('sldr.zip', Buffer.from(response.data))
+
+    # - name: Extract SLDR dependency
+    #   if: steps.cached-sldr.outputs.cache-hit != 'true'
+    #   run: |
+    #     unzip -q sldr.zip
+    #     rm sldr.zip
     
     # Build it
     - name: Generate langtags
